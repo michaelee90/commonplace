@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
+import { supabase } from "./supabase";
 
 // ─── Data ────────────────────────────────────────────────────────────────────
-
-const STORAGE_KEY = "commonplace-v2";
 
 const MODAL_TYPES = [
   { id: "Reading",  color: "#4a7c59", bg: "#eaf3ec", desc: "General webpage articles or blog posts" },
@@ -36,39 +35,6 @@ const TOPIC_TAGS = [
   { id: "Career",           desc: "Career development and job resources" },
 ];
 
-const DEFAULT_BOOKMARKS = [
-  {
-    id: "1",
-    title: "The Illustrated Transformer",
-    url: "https://jalammar.github.io/illustrated-transformer/",
-    description: "A visual walkthrough of how transformer models work under the hood.",
-    modalType: "Learning",
-    tags: ["Machine Learning", "Models"],
-    addedBy: "Alex",
-    addedAt: "2026-05-10",
-  },
-  {
-    id: "2",
-    title: "Pandas in 10 Minutes",
-    url: "https://pandas.pydata.org/docs/user_guide/10min.html",
-    description: "Official quick-start guide to Pandas for new users.",
-    modalType: "Learning",
-    tags: ["Python", "Pandas", "EDA"],
-    addedBy: "Sam",
-    addedAt: "2026-05-14",
-  },
-  {
-    id: "3",
-    title: "Attention Is All You Need",
-    url: "https://arxiv.org/abs/1706.03762",
-    description: "The original transformer paper by Vaswani et al. that changed everything.",
-    modalType: "Academic",
-    tags: ["Models", "Machine Learning", "GenAI"],
-    addedBy: "Jordan",
-    addedAt: "2026-05-18",
-  },
-];
-
 // ─── URL Auto-detection ───────────────────────────────────────────────────────
 
 function detectModalType(url) {
@@ -76,13 +42,13 @@ function detectModalType(url) {
   try {
     const u = url.toLowerCase();
     const host = new URL(url).hostname.replace("www.", "");
-    if (["youtube.com", "youtu.be", "vimeo.com", "loom.com", "wistia.com"].some(d => host.includes(d))) return "Video";
-    if (["spotify.com", "podcasts.apple.com", "overcast.fm", "pocketcasts.com", "buzzsprout.com", "anchor.fm", "soundcloud.com"].some(d => host.includes(d))) return "Podcast";
+    if (["youtube.com", "youtu.be", "vimeo.com", "loom.com"].some(d => host.includes(d))) return "Video";
+    if (["spotify.com", "podcasts.apple.com", "overcast.fm", "soundcloud.com", "anchor.fm"].some(d => host.includes(d))) return "Podcast";
     if (["github.com", "gitlab.com", "bitbucket.org"].some(d => host.includes(d))) return "Repo";
-    if (["arxiv.org", "researchgate.net", "semanticscholar.org", "scholar.google.com", "jstor.org", "pubmed.ncbi.nlm.nih.gov"].some(d => host.includes(d))) return "Academic";
-    if (["kaggle.com/datasets", "huggingface.co/datasets", "data.gov", "datasetsearch.research.google.com"].some(d => u.includes(d))) return "Dataset";
-    if (["colab.research.google.com", "observablehq.com", "desmos.com", "huggingface.co/spaces", "replit.com", "codepen.io", "jsfiddle.net"].some(d => host.includes(d) || u.includes(d))) return "Tool";
-    if (["coursera.org", "udemy.com", "fast.ai", "deeplearning.ai", "edx.org", "brilliant.org", "datacamp.com", "codecademy.com"].some(d => host.includes(d))) return "Learning";
+    if (["arxiv.org", "researchgate.net", "semanticscholar.org", "jstor.org", "pubmed.ncbi.nlm.nih.gov"].some(d => host.includes(d))) return "Academic";
+    if (["kaggle.com/datasets", "huggingface.co/datasets", "data.gov"].some(d => u.includes(d))) return "Dataset";
+    if (["colab.research.google.com", "observablehq.com", "desmos.com", "huggingface.co/spaces", "replit.com", "codepen.io"].some(d => host.includes(d) || u.includes(d))) return "Tool";
+    if (["coursera.org", "udemy.com", "fast.ai", "deeplearning.ai", "edx.org", "datacamp.com", "codecademy.com", "brilliant.org"].some(d => host.includes(d))) return "Learning";
   } catch {}
   return "Reading";
 }
@@ -110,24 +76,19 @@ function Tooltip({ text, children }) {
   );
 }
 
-function ModalBadge({ type, size = "sm" }) {
+function ModalBadge({ type }) {
   const m = MODAL_TYPES.find(t => t.id === type);
   if (!m) return null;
   return (
     <Tooltip text={m.desc}>
       <span style={{
         display: "inline-flex", alignItems: "center",
-        padding: size === "sm" ? "3px 9px" : "4px 11px",
-        borderRadius: "2px",
-        fontSize: size === "sm" ? "11px" : "12px",
-        fontWeight: 700,
-        letterSpacing: "0.05em",
-        textTransform: "uppercase",
-        background: m.bg,
-        color: m.color,
+        padding: "3px 9px", borderRadius: "2px",
+        fontSize: "11px", fontWeight: 700,
+        letterSpacing: "0.05em", textTransform: "uppercase",
+        background: m.bg, color: m.color,
         border: `1px solid ${m.color}30`,
-        cursor: "default",
-        userSelect: "none",
+        cursor: "default", userSelect: "none",
       }}>{m.id}</span>
     </Tooltip>
   );
@@ -146,8 +107,7 @@ function TopicPill({ tag, active, onClick }) {
         background: active ? "#1a1a1a" : "#f0ede8",
         color: active ? "#f5f2ed" : "#666",
         border: `1px solid ${active ? "#1a1a1a" : "#ddd9d3"}`,
-        transition: "all 0.15s ease",
-        userSelect: "none",
+        transition: "all 0.15s ease", userSelect: "none",
       }}>{tag}</span>
     </Tooltip>
   );
@@ -161,17 +121,14 @@ function BookmarkCard({ bookmark, onDelete, onTagClick, activeTag, activeModal }
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: "#fff",
-        border: "1px solid #e8e4de",
-        borderRadius: "5px",
-        padding: "20px 22px",
+        background: "#fff", border: "1px solid #e8e4de",
+        borderRadius: "5px", padding: "20px 22px",
         display: "flex", flexDirection: "column", gap: "11px",
         transition: "box-shadow 0.2s, transform 0.2s",
         boxShadow: hovered ? "0 6px 24px rgba(0,0,0,0.08)" : "0 1px 3px rgba(0,0,0,0.04)",
         transform: hovered ? "translateY(-1px)" : "none",
       }}
     >
-      {/* Title row */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <a href={bookmark.url} target="_blank" rel="noopener noreferrer"
@@ -179,8 +136,7 @@ function BookmarkCard({ bookmark, onDelete, onTagClick, activeTag, activeModal }
               fontFamily: "'Playfair Display', Georgia, serif",
               fontSize: "17px", fontWeight: 600,
               color: "#1a1a1a", textDecoration: "none",
-              display: "block", lineHeight: 1.35,
-              transition: "color 0.15s",
+              display: "block", lineHeight: 1.35, transition: "color 0.15s",
             }}
             onMouseEnter={e => e.target.style.color = "#7a4d1a"}
             onMouseLeave={e => e.target.style.color = "#1a1a1a"}
@@ -194,7 +150,7 @@ function BookmarkCard({ bookmark, onDelete, onTagClick, activeTag, activeModal }
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-          {bookmark.modalType && <ModalBadge type={bookmark.modalType} />}
+          {bookmark.modal_type && <ModalBadge type={bookmark.modal_type} />}
           <button onClick={() => onDelete(bookmark.id)} style={{
             background: "none", border: "none", cursor: "pointer",
             padding: "2px 4px", color: "#ccc", fontSize: "18px", lineHeight: 1,
@@ -207,7 +163,6 @@ function BookmarkCard({ bookmark, onDelete, onTagClick, activeTag, activeModal }
         </div>
       </div>
 
-      {/* Description */}
       {bookmark.description && (
         <p style={{
           margin: 0, fontSize: "13.5px", color: "#666",
@@ -215,10 +170,9 @@ function BookmarkCard({ bookmark, onDelete, onTagClick, activeTag, activeModal }
         }}>{bookmark.description}</p>
       )}
 
-      {/* Footer */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
-          {bookmark.tags.map(tag => (
+          {(bookmark.tags || []).map(tag => (
             <TopicPill key={tag} tag={tag}
               active={activeTag === tag}
               onClick={() => onTagClick(tag)}
@@ -226,7 +180,7 @@ function BookmarkCard({ bookmark, onDelete, onTagClick, activeTag, activeModal }
           ))}
         </div>
         <div style={{ fontSize: "11px", color: "#c0bab2", fontFamily: "'DM Mono', monospace", whiteSpace: "nowrap" }}>
-          {bookmark.addedBy} · {bookmark.addedAt}
+          {bookmark.added_by} · {bookmark.added_at}
         </div>
       </div>
     </div>
@@ -235,7 +189,7 @@ function BookmarkCard({ bookmark, onDelete, onTagClick, activeTag, activeModal }
 
 // ─── Add Modal ────────────────────────────────────────────────────────────────
 
-function AddModal({ onAdd, onClose }) {
+function AddModal({ onAdd, onClose, existingUrls }) {
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -243,11 +197,11 @@ function AddModal({ onAdd, onClose }) {
   const [modalType, setModalType] = useState(null);
   const [selectedTags, setSelectedTags] = useState([]);
   const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
   const urlRef = useRef();
 
   useEffect(() => { urlRef.current?.focus(); }, []);
 
-  // Auto-detect modal type when URL changes
   useEffect(() => {
     if (url.trim()) {
       const detected = detectModalType(url.trim());
@@ -262,23 +216,30 @@ function AddModal({ onAdd, onClose }) {
     const e = {};
     if (!title.trim()) e.title = "Required";
     if (!url.trim()) e.url = "Required";
-    else { try { new URL(url.trim()); } catch { e.url = "Enter a valid URL"; } }
+    else {
+      try { new URL(url.trim()); } catch { e.url = "Enter a valid URL"; }
+      if (!e.url && existingUrls.includes(url.trim())) {
+        e.url = "This link has already been saved by a teammate";
+      }
+    }
     if (!addedBy.trim()) e.addedBy = "Required";
     if (!modalType) e.modalType = "Please select a type";
     return e;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
-    onAdd({
-      id: Date.now().toString(),
+    setSaving(true);
+    await onAdd({
       title: title.trim(), url: url.trim(),
       description: description.trim(),
-      addedBy: addedBy.trim(), modalType,
+      added_by: addedBy.trim(),
+      modal_type: modalType,
       tags: selectedTags,
-      addedAt: new Date().toISOString().slice(0, 10),
+      added_at: new Date().toISOString().slice(0, 10),
     });
+    setSaving(false);
     onClose();
   };
 
@@ -320,7 +281,6 @@ function AddModal({ onAdd, onClose }) {
           </p>
         </div>
 
-        {/* URL */}
         <div>
           <label style={label}>URL *</label>
           <input ref={urlRef} style={field(errors.url)} value={url} placeholder="https://..."
@@ -328,10 +288,9 @@ function AddModal({ onAdd, onClose }) {
             onFocus={e => e.target.style.borderColor = "#7a4d1a"}
             onBlur={e => e.target.style.borderColor = errors.url ? "#cc4444" : "#ddd9d3"}
           />
-          {errors.url && <span style={{ fontSize: "11px", color: "#cc4444" }}>{errors.url}</span>}
+          {errors.url && <span style={{ fontSize: "11px", color: "#cc4444", marginTop: "3px", display: "block" }}>{errors.url}</span>}
         </div>
 
-        {/* Title */}
         <div>
           <label style={label}>Title *</label>
           <input style={field(errors.title)} value={title} placeholder="Descriptive title"
@@ -339,10 +298,9 @@ function AddModal({ onAdd, onClose }) {
             onFocus={e => e.target.style.borderColor = "#7a4d1a"}
             onBlur={e => e.target.style.borderColor = errors.title ? "#cc4444" : "#ddd9d3"}
           />
-          {errors.title && <span style={{ fontSize: "11px", color: "#cc4444" }}>{errors.title}</span>}
+          {errors.title && <span style={{ fontSize: "11px", color: "#cc4444", marginTop: "3px", display: "block" }}>{errors.title}</span>}
         </div>
 
-        {/* Description */}
         <div>
           <label style={label}>Description</label>
           <textarea style={{ ...field(false), resize: "vertical", minHeight: "68px" }}
@@ -353,7 +311,6 @@ function AddModal({ onAdd, onClose }) {
           />
         </div>
 
-        {/* Modal type */}
         <div>
           <label style={label}>
             Link Type *
@@ -381,7 +338,6 @@ function AddModal({ onAdd, onClose }) {
           {errors.modalType && <span style={{ fontSize: "11px", color: "#cc4444", marginTop: "4px", display: "block" }}>{errors.modalType}</span>}
         </div>
 
-        {/* Topic tags */}
         <div>
           <label style={label}>
             Topic Tags
@@ -408,7 +364,6 @@ function AddModal({ onAdd, onClose }) {
           </div>
         </div>
 
-        {/* Name */}
         <div>
           <label style={label}>Your Name *</label>
           <input style={field(errors.addedBy)} value={addedBy} placeholder="Who's adding this?"
@@ -416,22 +371,21 @@ function AddModal({ onAdd, onClose }) {
             onFocus={e => e.target.style.borderColor = "#7a4d1a"}
             onBlur={e => e.target.style.borderColor = errors.addedBy ? "#cc4444" : "#ddd9d3"}
           />
-          {errors.addedBy && <span style={{ fontSize: "11px", color: "#cc4444" }}>{errors.addedBy}</span>}
+          {errors.addedBy && <span style={{ fontSize: "11px", color: "#cc4444", marginTop: "3px", display: "block" }}>{errors.addedBy}</span>}
         </div>
 
-        {/* Actions */}
         <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
           <button onClick={onClose} style={{
             padding: "10px 18px", background: "none", border: "1px solid #ddd9d3",
             borderRadius: "3px", cursor: "pointer", fontSize: "13.5px",
             color: "#888", fontFamily: "'DM Sans', sans-serif",
           }}>Cancel</button>
-          <button onClick={handleSubmit} style={{
-            padding: "10px 24px", background: "#1a1a1a", border: "none",
-            borderRadius: "3px", cursor: "pointer", fontSize: "13.5px",
+          <button onClick={handleSubmit} disabled={saving} style={{
+            padding: "10px 24px", background: saving ? "#888" : "#1a1a1a", border: "none",
+            borderRadius: "3px", cursor: saving ? "default" : "pointer", fontSize: "13.5px",
             color: "#f5f2ed", fontFamily: "'DM Sans', sans-serif",
             fontWeight: 600, letterSpacing: "0.03em",
-          }}>Save Bookmark</button>
+          }}>{saving ? "Saving…" : "Save Bookmark"}</button>
         </div>
       </div>
     </div>
@@ -441,40 +395,59 @@ function AddModal({ onAdd, onClose }) {
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [bookmarks, setBookmarks] = useState(() => {
-    try {
-      const s = localStorage.getItem(STORAGE_KEY);
-      return s ? JSON.parse(s) : DEFAULT_BOOKMARKS;
-    } catch { return DEFAULT_BOOKMARKS; }
-  });
+  const [bookmarks, setBookmarks] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState(null);
   const [activeModal, setActiveModal] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
+  // Load from Supabase on mount
   useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(bookmarks)); } catch {}
-  }, [bookmarks]);
+    async function load() {
+      const { data, error } = await supabase
+        .from("bookmarks")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (!error) setBookmarks(data || []);
+      setLoading(false);
+    }
+    load();
+  }, []);
 
-  const allUsedTags = [...new Set(bookmarks.flatMap(b => b.tags))];
-  const allUsedModals = [...new Set(bookmarks.map(b => b.modalType).filter(Boolean))];
+  const addBookmark = async (bookmark) => {
+    const { data, error } = await supabase
+      .from("bookmarks")
+      .insert([bookmark])
+      .select()
+      .single();
+    if (!error && data) setBookmarks(bs => [data, ...bs]);
+  };
+
+  const deleteBookmark = async (id) => {
+    await supabase.from("bookmarks").delete().eq("id", id);
+    setBookmarks(bs => bs.filter(b => b.id !== id));
+  };
+
+  const existingUrls = bookmarks.map(b => b.url);
+  const allUsedTags = [...new Set(bookmarks.flatMap(b => b.tags || []))];
+  const allUsedModals = [...new Set(bookmarks.map(b => b.modal_type).filter(Boolean))];
 
   const filtered = bookmarks.filter(b => {
     const q = search.toLowerCase();
     const matchesSearch = !q ||
-      b.title.toLowerCase().includes(q) ||
+      b.title?.toLowerCase().includes(q) ||
       b.description?.toLowerCase().includes(q) ||
-      b.url.toLowerCase().includes(q) ||
-      b.tags.some(t => t.toLowerCase().includes(q)) ||
-      b.addedBy?.toLowerCase().includes(q);
-    const matchesTag = !activeTag || b.tags.includes(activeTag);
-    const matchesModal = !activeModal || b.modalType === activeModal;
+      b.url?.toLowerCase().includes(q) ||
+      (b.tags || []).some(t => t.toLowerCase().includes(q)) ||
+      b.added_by?.toLowerCase().includes(q);
+    const matchesTag = !activeTag || (b.tags || []).includes(activeTag);
+    const matchesModal = !activeModal || b.modal_type === activeModal;
     return matchesSearch && matchesTag && matchesModal;
   });
 
   const toggleTag = t => setActiveTag(a => a === t ? null : t);
   const toggleModal = m => setActiveModal(a => a === m ? null : m);
-
   const hasFilter = search || activeTag || activeModal;
 
   return (
@@ -552,7 +525,7 @@ export default function App() {
             )}
           </div>
 
-          {/* Modal type filter row */}
+          {/* Modal type filters */}
           {allUsedModals.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "12px" }}>
               {MODAL_TYPES.filter(m => allUsedModals.includes(m.id)).map(m => (
@@ -564,15 +537,14 @@ export default function App() {
                     background: activeModal === m.id ? m.bg : "#fff",
                     color: activeModal === m.id ? m.color : "#aaa",
                     border: `1px solid ${activeModal === m.id ? m.color : "#e0dbd3"}`,
-                    transition: "all 0.15s",
-                    fontFamily: "'DM Sans', sans-serif",
+                    transition: "all 0.15s", fontFamily: "'DM Sans', sans-serif",
                   }}>{m.id}</span>
                 </Tooltip>
               ))}
             </div>
           )}
 
-          {/* Topic tag filter row */}
+          {/* Topic tag filters */}
           {allUsedTags.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "24px" }}>
               {TOPIC_TAGS.filter(t => allUsedTags.includes(t.id)).map(t => (
@@ -602,40 +574,47 @@ export default function App() {
           )}
 
           {/* Cards */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {filtered.length === 0 ? (
-              <div style={{
-                textAlign: "center", padding: "72px 24px",
-                color: "#c0bab2", fontFamily: "'Playfair Display', serif", fontSize: "19px",
-              }}>
-                No bookmarks found.
-                {hasFilter && (
-                  <div style={{ marginTop: "10px", fontSize: "13px", fontFamily: "'DM Sans', sans-serif" }}>
-                    <span style={{ cursor: "pointer", color: "#7a4d1a", textDecoration: "underline" }}
-                      onClick={() => { setSearch(""); setActiveTag(null); setActiveModal(null); }}>
-                      Clear filters
-                    </span>
-                  </div>
-                )}
-              </div>
-            ) : (
-              filtered.map(b => (
-                <BookmarkCard key={b.id} bookmark={b}
-                  onDelete={id => setBookmarks(bs => bs.filter(bk => bk.id !== id))}
-                  onTagClick={toggleTag}
-                  activeTag={activeTag}
-                  activeModal={activeModal}
-                />
-              ))
-            )}
-          </div>
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "72px 24px", color: "#c0bab2", fontFamily: "'DM Mono', monospace", fontSize: "13px" }}>
+              Loading…
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {filtered.length === 0 ? (
+                <div style={{
+                  textAlign: "center", padding: "72px 24px",
+                  color: "#c0bab2", fontFamily: "'Playfair Display', serif", fontSize: "19px",
+                }}>
+                  No bookmarks found.
+                  {hasFilter && (
+                    <div style={{ marginTop: "10px", fontSize: "13px", fontFamily: "'DM Sans', sans-serif" }}>
+                      <span style={{ cursor: "pointer", color: "#7a4d1a", textDecoration: "underline" }}
+                        onClick={() => { setSearch(""); setActiveTag(null); setActiveModal(null); }}>
+                        Clear filters
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                filtered.map(b => (
+                  <BookmarkCard key={b.id} bookmark={b}
+                    onDelete={deleteBookmark}
+                    onTagClick={toggleTag}
+                    activeTag={activeTag}
+                    activeModal={activeModal}
+                  />
+                ))
+              )}
+            </div>
+          )}
         </div>
       </div>
 
       {showModal && (
         <AddModal
-          onAdd={b => setBookmarks(bs => [b, ...bs])}
+          onAdd={addBookmark}
           onClose={() => setShowModal(false)}
+          existingUrls={existingUrls}
         />
       )}
     </>
