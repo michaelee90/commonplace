@@ -70,7 +70,11 @@ const FOOTER_TEXT = "#e8ddd0";
 const FOOTER_MUTED = "#9a8070";
 const FOOTER_ACCENT = "#c8a87a";
 
-// ─── URL Auto-detection ───────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getDomain(url) {
+  try { return new URL(url).hostname.replace("www.", ""); } catch { return null; }
+}
 
 function detectModalType(url) {
   if (!url) return null;
@@ -133,7 +137,6 @@ function FooterCarousel({ bookmarks }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Trending score by tag
   const tagScore = (bms) => {
     const scores = {};
     bms.forEach(b => {
@@ -144,8 +147,7 @@ function FooterCarousel({ bookmarks }) {
   };
 
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const weeklyBms = bookmarks.filter(b => new Date(b.added_at) >= weekAgo);
-  const trendingWeek = tagScore(weeklyBms);
+  const trendingWeek = tagScore(bookmarks.filter(b => new Date(b.added_at) >= weekAgo));
   const trendingAllTime = tagScore(bookmarks);
   const quote = QUOTES[quoteIdx];
 
@@ -158,6 +160,10 @@ function FooterCarousel({ bookmarks }) {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
+      position: "sticky",
+      bottom: 0,
+      zIndex: 100,
+      flexShrink: 0,
     }}>
       <div style={{
         opacity: fade ? 1 : 0,
@@ -169,102 +175,57 @@ function FooterCarousel({ bookmarks }) {
         justifyContent: "center",
       }}>
         {slide === 0 ? (
-          // Quote slide
           <div style={{ textAlign: "center", maxWidth: "680px" }}>
             <div style={{
-              fontSize: "13.5px",
-              color: FOOTER_TEXT,
-              lineHeight: 1.65,
-              fontFamily: "'Playfair Display', serif",
-              fontStyle: "italic",
-              fontWeight: 600,
-              marginBottom: "8px",
-            }}>
-              "{quote.text}"
-            </div>
-            <div style={{
-              fontSize: "11px",
-              color: FOOTER_ACCENT,
-              fontFamily: "'DM Mono', monospace",
-              letterSpacing: "0.06em",
-            }}>
+              fontSize: "13.5px", color: FOOTER_TEXT, lineHeight: 1.65,
+              fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontWeight: 600, marginBottom: "8px",
+            }}>"{quote.text}"</div>
+            <div style={{ fontSize: "11px", color: FOOTER_ACCENT, fontFamily: "'DM Mono', monospace", letterSpacing: "0.06em" }}>
               — {quote.author}
             </div>
           </div>
         ) : (
-          // Trending slide
           <div style={{ display: "flex", alignItems: "flex-start", gap: "48px", justifyContent: "center" }}>
-            {/* This week */}
             <div>
-              <div style={{
-                fontSize: "9px", fontWeight: 700, letterSpacing: "0.1em",
-                textTransform: "uppercase", color: FOOTER_MUTED,
-                fontFamily: "'DM Sans', sans-serif", marginBottom: "10px",
-              }}>
+              <div style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: FOOTER_MUTED, fontFamily: "'DM Sans', sans-serif", marginBottom: "10px" }}>
                 Trending this week
               </div>
               <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                 {trendingWeek.length > 0 ? trendingWeek.map((tag, i) => (
                   <span key={tag} style={{
-                    fontSize: "11px", fontWeight: 700,
-                    padding: "4px 10px", borderRadius: "2px",
+                    fontSize: "11px", fontWeight: 700, padding: "4px 10px", borderRadius: "2px",
                     background: i === 0 ? FOOTER_ACCENT : "rgba(255,255,255,0.08)",
                     color: i === 0 ? FOOTER_BG : FOOTER_TEXT,
-                    fontFamily: "'DM Sans', sans-serif",
-                    letterSpacing: "0.05em", textTransform: "uppercase",
+                    fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.05em", textTransform: "uppercase",
                   }}>{tag}</span>
-                )) : (
-                  <span style={{ fontSize: "11px", color: FOOTER_MUTED, fontFamily: "'DM Sans', sans-serif" }}>
-                    No activity yet
-                  </span>
-                )}
+                )) : <span style={{ fontSize: "11px", color: FOOTER_MUTED, fontFamily: "'DM Sans', sans-serif" }}>No activity yet</span>}
               </div>
             </div>
-
-            {/* Divider */}
-            <div style={{ width: "1px", background: "#5a3f28", alignSelf: "stretch", marginTop: "4px" }} />
-
-            {/* All time */}
+            <div style={{ width: "1px", background: "#5a3f28", alignSelf: "stretch" }} />
             <div>
-              <div style={{
-                fontSize: "9px", fontWeight: 700, letterSpacing: "0.1em",
-                textTransform: "uppercase", color: FOOTER_MUTED,
-                fontFamily: "'DM Sans', sans-serif", marginBottom: "10px",
-              }}>
+              <div style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: FOOTER_MUTED, fontFamily: "'DM Sans', sans-serif", marginBottom: "10px" }}>
                 All time
               </div>
               <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                 {trendingAllTime.length > 0 ? trendingAllTime.map((tag, i) => (
                   <span key={tag} style={{
-                    fontSize: "11px", fontWeight: 700,
-                    padding: "4px 10px", borderRadius: "2px",
+                    fontSize: "11px", fontWeight: 700, padding: "4px 10px", borderRadius: "2px",
                     background: i === 0 ? FOOTER_ACCENT : "rgba(255,255,255,0.08)",
                     color: i === 0 ? FOOTER_BG : FOOTER_TEXT,
-                    fontFamily: "'DM Sans', sans-serif",
-                    letterSpacing: "0.05em", textTransform: "uppercase",
+                    fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.05em", textTransform: "uppercase",
                   }}>{tag}</span>
-                )) : (
-                  <span style={{ fontSize: "11px", color: FOOTER_MUTED, fontFamily: "'DM Sans', sans-serif" }}>
-                    No data yet
-                  </span>
-                )}
+                )) : <span style={{ fontSize: "11px", color: FOOTER_MUTED, fontFamily: "'DM Sans', sans-serif" }}>No data yet</span>}
               </div>
             </div>
           </div>
         )}
       </div>
-
-      {/* Slide indicator dots */}
       <div style={{ position: "absolute", right: "32px", display: "flex", gap: "5px", alignItems: "center" }}>
         {[0, 1].map(i => (
           <span key={i} onClick={() => setSlide(i)} style={{
-            width: i === slide ? "16px" : "5px",
-            height: "5px",
-            borderRadius: "3px",
+            width: i === slide ? "16px" : "5px", height: "5px", borderRadius: "3px",
             background: i === slide ? FOOTER_ACCENT : FOOTER_MUTED,
-            cursor: "pointer",
-            transition: "all 0.3s ease",
-            display: "inline-block",
+            cursor: "pointer", transition: "all 0.3s ease", display: "inline-block",
           }} />
         ))}
       </div>
@@ -280,12 +241,9 @@ function ModalBadge({ type }) {
   return (
     <Tooltip text={m.desc}>
       <span style={{
-        display: "inline-flex", alignItems: "center",
-        padding: "3px 9px", borderRadius: "2px",
-        fontSize: "11px", fontWeight: 700,
-        letterSpacing: "0.05em", textTransform: "uppercase",
-        background: m.bg, color: m.color,
-        border: `1px solid ${m.color}30`,
+        display: "inline-flex", alignItems: "center", padding: "3px 9px", borderRadius: "2px",
+        fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase",
+        background: m.bg, color: m.color, border: `1px solid ${m.color}30`,
         cursor: "default", userSelect: "none",
       }}>{m.id}</span>
     </Tooltip>
@@ -297,10 +255,8 @@ function TopicPill({ tag, active, onClick }) {
   return (
     <Tooltip text={t.desc}>
       <span onClick={onClick} style={{
-        display: "inline-flex", alignItems: "center",
-        padding: "3px 10px", borderRadius: "2px",
-        fontSize: "11px", fontWeight: 600,
-        letterSpacing: "0.05em", textTransform: "uppercase",
+        display: "inline-flex", alignItems: "center", padding: "3px 10px", borderRadius: "2px",
+        fontSize: "11px", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase",
         cursor: onClick ? "pointer" : "default",
         background: active ? "#1a1a1a" : "#f0ede8",
         color: active ? "#f5f2ed" : "#666",
@@ -311,28 +267,112 @@ function TopicPill({ tag, active, onClick }) {
   );
 }
 
+// ─── Related Panel ────────────────────────────────────────────────────────────
+
+function RelatedPanel({ bookmark, allBookmarks, onClose, onTagClick }) {
+  const domain = getDomain(bookmark.url);
+  const related = allBookmarks.filter(b => b.id !== bookmark.id && getDomain(b.url) === domain);
+
+  return (
+    <div style={{
+      width: "300px",
+      flexShrink: 0,
+      background: "#fff",
+      border: "1px solid #e8e4de",
+      borderRadius: "5px",
+      display: "flex",
+      flexDirection: "column",
+      overflow: "hidden",
+      alignSelf: "flex-start",
+      position: "sticky",
+      top: "80px",
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: "14px 16px",
+        borderBottom: "1px solid #f0ede8",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        background: "#faf9f7",
+      }}>
+        <div>
+          <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#aaa", fontFamily: "'DM Sans', sans-serif", marginBottom: "2px" }}>
+            More from
+          </div>
+          <div style={{ fontSize: "12px", fontFamily: "'DM Mono', monospace", color: "#555", fontWeight: 500 }}>
+            {domain}
+          </div>
+        </div>
+        <button onClick={onClose} style={{
+          background: "none", border: "none", cursor: "pointer",
+          fontSize: "18px", color: "#ccc", lineHeight: 1, padding: "2px 4px",
+        }}
+          onMouseEnter={e => e.target.style.color = "#888"}
+          onMouseLeave={e => e.target.style.color = "#ccc"}
+        >×</button>
+      </div>
+
+      {/* Related list */}
+      <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: "10px", overflowY: "auto", maxHeight: "60vh" }}>
+        {related.length === 0 ? (
+          <div style={{ padding: "24px 8px", textAlign: "center", color: "#bbb", fontSize: "12px", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6 }}>
+            No other bookmarks from<br />{domain} yet.
+          </div>
+        ) : related.map(b => (
+          <div key={b.id} style={{
+            padding: "12px", borderRadius: "4px", border: "1px solid #f0ede8",
+            background: "#faf9f7", display: "flex", flexDirection: "column", gap: "6px",
+          }}>
+            <a href={b.url} target="_blank" rel="noopener noreferrer" style={{
+              fontFamily: "'Playfair Display', serif", fontSize: "13px", fontWeight: 600,
+              color: "#1a1a1a", textDecoration: "none", lineHeight: 1.35,
+            }}
+              onMouseEnter={e => e.target.style.color = "#7a4d1a"}
+              onMouseLeave={e => e.target.style.color = "#1a1a1a"}
+            >{b.title}</a>
+            {b.description && (
+              <p style={{ margin: 0, fontSize: "11.5px", color: "#888", lineHeight: 1.5, fontFamily: "'DM Sans', sans-serif" }}>
+                {b.description.length > 80 ? b.description.slice(0, 80) + "…" : b.description}
+              </p>
+            )}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+              {(b.tags || []).map(tag => (
+                <TopicPill key={tag} tag={tag} onClick={() => onTagClick(tag)} />
+              ))}
+            </div>
+            <div style={{ fontSize: "10px", color: "#c0bab2", fontFamily: "'DM Mono', monospace" }}>
+              {b.added_by ? `${b.added_by} · ` : ""}{b.added_at}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Bookmark Card ────────────────────────────────────────────────────────────
 
-function BookmarkCard({ bookmark, onDelete, onTagClick, activeTag, onClickLink, onUpvote }) {
+function BookmarkCard({ bookmark, onDelete, onEdit, onTagClick, activeTag, onClickLink, onUpvote, isSelected, onClick }) {
   const [hovered, setHovered] = useState(false);
 
   return (
     <div
+      onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: "#fff", border: "1px solid #e8e4de",
+        background: "#fff", border: `1px solid ${isSelected ? "#7a4d1a" : "#e8e4de"}`,
         borderRadius: "5px", padding: "20px 22px",
         display: "flex", flexDirection: "column", gap: "11px",
-        transition: "box-shadow 0.2s, transform 0.2s",
-        boxShadow: hovered ? "0 6px 24px rgba(0,0,0,0.08)" : "0 1px 3px rgba(0,0,0,0.04)",
+        transition: "box-shadow 0.2s, transform 0.2s, border-color 0.2s",
+        boxShadow: isSelected ? "0 6px 24px rgba(122,77,26,0.12)" : hovered ? "0 6px 24px rgba(0,0,0,0.08)" : "0 1px 3px rgba(0,0,0,0.04)",
         transform: hovered ? "translateY(-1px)" : "none",
+        cursor: "pointer",
       }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <a href={bookmark.url} target="_blank" rel="noopener noreferrer"
-            onClick={() => onClickLink(bookmark.id)}
+            onClick={e => { e.stopPropagation(); onClickLink(bookmark.id); }}
             style={{
               fontFamily: "'Playfair Display', Georgia, serif",
               fontSize: "17px", fontWeight: 600,
@@ -347,20 +387,40 @@ function BookmarkCard({ bookmark, onDelete, onTagClick, activeTag, onClickLink, 
             fontFamily: "'DM Mono', monospace",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
           }}>
-            {bookmark.url.replace(/^https?:\/\//, "").split("/")[0]}
+            {getDomain(bookmark.url)}
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+
+        {/* Modal badge + stacked edit/delete */}
+        <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: "8px", flexShrink: 0 }}>
           {bookmark.modal_type && <ModalBadge type={bookmark.modal_type} />}
-          <button onClick={() => onDelete(bookmark.id)} style={{
-            background: "none", border: "none", cursor: "pointer",
-            padding: "2px 4px", color: "#ccc", fontSize: "18px", lineHeight: 1,
-            opacity: hovered ? 1 : 0, transition: "opacity 0.15s, color 0.15s",
-          }}
-            onMouseEnter={e => e.target.style.color = "#cc4444"}
-            onMouseLeave={e => e.target.style.color = "#ccc"}
-            title="Remove bookmark"
-          >×</button>
+          <div style={{
+            display: "flex", flexDirection: "column", alignItems: "center", gap: "2px",
+            opacity: hovered ? 1 : 0, transition: "opacity 0.15s",
+          }}>
+            <Tooltip text="Edit bookmark">
+              <button onClick={e => { e.stopPropagation(); onEdit(bookmark); }} style={{
+                background: "none", border: "none", cursor: "pointer",
+                padding: "2px 4px", color: "#bbb", fontSize: "13px", lineHeight: 1,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+                onMouseEnter={e => e.target.style.color = "#7a4d1a"}
+                onMouseLeave={e => e.target.style.color = "#bbb"}
+                title="Edit"
+              >✏️</button>
+            </Tooltip>
+            <Tooltip text="Delete bookmark">
+              <button onClick={e => { e.stopPropagation(); onDelete(bookmark.id); }} style={{
+                background: "none", border: "none", cursor: "pointer",
+                padding: "2px 4px", color: "#ccc", fontSize: "15px", lineHeight: 1,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+                onMouseEnter={e => e.target.style.color = "#cc4444"}
+                onMouseLeave={e => e.target.style.color = "#ccc"}
+                title="Delete"
+              >×</button>
+            </Tooltip>
+          </div>
         </div>
       </div>
 
@@ -376,7 +436,7 @@ function BookmarkCard({ bookmark, onDelete, onTagClick, activeTag, onClickLink, 
           {(bookmark.tags || []).map(tag => (
             <TopicPill key={tag} tag={tag}
               active={activeTag === tag}
-              onClick={() => onTagClick(tag)}
+              onClick={e => { e.stopPropagation(); onTagClick(tag); }}
             />
           ))}
         </div>
@@ -387,7 +447,7 @@ function BookmarkCard({ bookmark, onDelete, onTagClick, activeTag, onClickLink, 
             </span>
           </Tooltip>
           <Tooltip text={bookmark._upvoted ? "Remove upvote" : "Upvote this link"}>
-            <span onClick={() => onUpvote(bookmark.id, bookmark._upvoted)} style={{
+            <span onClick={e => { e.stopPropagation(); onUpvote(bookmark.id, bookmark._upvoted); }} style={{
               display: "flex", alignItems: "center", gap: "4px",
               fontSize: "11px", fontFamily: "'DM Mono', monospace",
               color: bookmark._upvoted ? "#7a4d1a" : "#bbb",
@@ -406,15 +466,17 @@ function BookmarkCard({ bookmark, onDelete, onTagClick, activeTag, onClickLink, 
   );
 }
 
-// ─── Draggable Add Modal ──────────────────────────────────────────────────────
+// ─── Add / Edit Modal ─────────────────────────────────────────────────────────
 
-function AddModal({ onAdd, onClose, existingUrls }) {
-  const [url, setUrl] = useState("");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [addedBy, setAddedBy] = useState("");
-  const [modalType, setModalType] = useState(null);
-  const [selectedTags, setSelectedTags] = useState([]);
+function BookmarkModal({ onSave, onClose, existingUrls, editingBookmark }) {
+  const isEdit = !!editingBookmark;
+
+  const [url, setUrl] = useState(editingBookmark?.url || "");
+  const [title, setTitle] = useState(editingBookmark?.title || "");
+  const [description, setDescription] = useState(editingBookmark?.description || "");
+  const [addedBy, setAddedBy] = useState(editingBookmark?.added_by || "");
+  const [modalType, setModalType] = useState(editingBookmark?.modal_type || null);
+  const [selectedTags, setSelectedTags] = useState(editingBookmark?.tags || []);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const urlRef = useRef();
@@ -431,20 +493,17 @@ function AddModal({ onAdd, onClose, existingUrls }) {
   }, [pos]);
 
   useEffect(() => {
-    const onMouseMove = (e) => {
-      if (!dragging.current) return;
-      setPos({ x: e.clientX - offset.current.x, y: e.clientY - offset.current.y });
-    };
+    const onMouseMove = (e) => { if (dragging.current) setPos({ x: e.clientX - offset.current.x, y: e.clientY - offset.current.y }); };
     const onMouseUp = () => { dragging.current = false; };
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
     return () => { window.removeEventListener("mousemove", onMouseMove); window.removeEventListener("mouseup", onMouseUp); };
   }, []);
 
-  useEffect(() => { urlRef.current?.focus(); }, []);
+  useEffect(() => { if (!isEdit) urlRef.current?.focus(); }, []);
 
   useEffect(() => {
-    if (url.trim()) {
+    if (!isEdit && url.trim()) {
       const detected = detectModalType(url.trim());
       if (detected) setModalType(detected);
     }
@@ -459,7 +518,7 @@ function AddModal({ onAdd, onClose, existingUrls }) {
     if (!url.trim()) e.url = "Required";
     else {
       try { new URL(url.trim()); } catch { e.url = "Enter a valid URL"; }
-      if (!e.url && existingUrls.includes(url.trim())) e.url = "This link has already been saved by a teammate";
+      if (!e.url && !isEdit && existingUrls.includes(url.trim())) e.url = "This link has already been saved by a teammate";
     }
     if (!modalType) e.modalType = "Please select a type";
     return e;
@@ -469,14 +528,14 @@ function AddModal({ onAdd, onClose, existingUrls }) {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
     setSaving(true);
-    await onAdd({
+    await onSave({
+      ...(isEdit ? { id: editingBookmark.id } : {}),
       title: title.trim(), url: url.trim(),
       description: description.trim(),
       added_by: addedBy.trim() || null,
       modal_type: modalType,
       tags: selectedTags,
-      added_at: new Date().toISOString().slice(0, 10),
-      clicks: 0, upvotes: 0,
+      ...(!isEdit ? { added_at: new Date().toISOString().slice(0, 10), clicks: 0, upvotes: 0 } : {}),
     });
     setSaving(false);
     onClose();
@@ -494,59 +553,39 @@ function AddModal({ onAdd, onClose, existingUrls }) {
   const label = {
     display: "block", fontSize: "10px", fontWeight: 600,
     letterSpacing: "0.06em", textTransform: "uppercase",
-    color: "#888", marginBottom: "4px",
-    fontFamily: "'DM Sans', sans-serif",
+    color: "#888", marginBottom: "4px", fontFamily: "'DM Sans', sans-serif",
   };
 
   return (
     <div style={{
-      position: "fixed",
-      left: `${pos.x}px`,
-      top: `${pos.y}px`,
-      width: "500px",
-      maxWidth: "calc(100vw - 32px)",
-      background: "#fff",
-      borderRadius: "6px",
+      position: "fixed", left: `${pos.x}px`, top: `${pos.y}px`,
+      width: "500px", maxWidth: "calc(100vw - 32px)",
+      background: "#fff", borderRadius: "6px",
       boxShadow: "0 24px 64px rgba(0,0,0,0.22)",
-      zIndex: 1000,
-      display: "flex",
-      flexDirection: "column",
-      maxHeight: "85vh",
-      overflow: "hidden",
+      zIndex: 1000, display: "flex", flexDirection: "column",
+      maxHeight: "85vh", overflow: "hidden",
     }}>
       {/* Drag handle */}
       <div onMouseDown={onMouseDown} style={{
-        padding: "16px 20px 12px",
-        borderBottom: "1px solid #f0ede8",
-        cursor: "grab",
-        userSelect: "none",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        flexShrink: 0,
-        background: "#faf9f7",
-        borderRadius: "6px 6px 0 0",
+        padding: "16px 20px 12px", borderBottom: "1px solid #f0ede8",
+        cursor: "grab", userSelect: "none",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        flexShrink: 0, background: "#faf9f7", borderRadius: "6px 6px 0 0",
       }}>
         <div>
           <h2 style={{ margin: 0, fontFamily: "'Playfair Display', serif", fontSize: "18px", fontWeight: 700, color: "#1a1a1a" }}>
-            Add to Commonplace
+            {isEdit ? "Edit Bookmark" : "Add to Commonplace"}
           </h2>
           <p style={{ margin: "2px 0 0", fontSize: "10px", color: "#bbb", fontFamily: "'DM Mono', monospace", letterSpacing: "0.04em" }}>
             ⠿ drag to move
           </p>
         </div>
-        <button onClick={onClose} style={{
-          background: "none", border: "none", cursor: "pointer",
-          fontSize: "20px", color: "#ccc", lineHeight: 1, padding: "4px",
-        }}
-          onMouseEnter={e => e.target.style.color = "#888"}
-          onMouseLeave={e => e.target.style.color = "#ccc"}
-        >×</button>
+        <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "20px", color: "#ccc", lineHeight: 1, padding: "4px" }}
+          onMouseEnter={e => e.target.style.color = "#888"} onMouseLeave={e => e.target.style.color = "#ccc"}>×</button>
       </div>
 
       {/* Form */}
       <div style={{ padding: "18px 20px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "14px" }}>
-
         <div>
           <label style={label}>URL *</label>
           <input ref={urlRef} style={field(errors.url)} value={url} placeholder="https://..."
@@ -578,20 +617,13 @@ function AddModal({ onAdd, onClose, existingUrls }) {
         </div>
 
         <div>
-          <label style={label}>
-            Link Type *
-            <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, marginLeft: "6px", color: "#bbb", fontSize: "10px" }}>
-              — auto-detected, adjust if needed
-            </span>
-          </label>
+          <label style={label}>Link Type * <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, color: "#bbb", fontSize: "10px" }}>— auto-detected, adjust if needed</span></label>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
             {MODAL_TYPES.map(m => (
               <Tooltip key={m.id} text={m.desc}>
                 <span onClick={() => { setModalType(m.id); setErrors(er => ({ ...er, modalType: null })); }} style={{
-                  padding: "4px 10px", borderRadius: "2px",
-                  fontSize: "10px", fontWeight: 700,
-                  letterSpacing: "0.05em", textTransform: "uppercase",
-                  cursor: "pointer", userSelect: "none",
+                  padding: "4px 10px", borderRadius: "2px", fontSize: "10px", fontWeight: 700,
+                  letterSpacing: "0.05em", textTransform: "uppercase", cursor: "pointer", userSelect: "none",
                   background: modalType === m.id ? m.bg : "#f5f2ed",
                   color: modalType === m.id ? m.color : "#999",
                   border: `1px solid ${modalType === m.id ? m.color : "#e0dbd3"}`,
@@ -604,20 +636,13 @@ function AddModal({ onAdd, onClose, existingUrls }) {
         </div>
 
         <div>
-          <label style={label}>
-            Topic Tags
-            <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, marginLeft: "6px", color: "#bbb", fontSize: "10px" }}>
-              — select all that apply
-            </span>
-          </label>
+          <label style={label}>Topic Tags <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, color: "#bbb", fontSize: "10px" }}>— select all that apply</span></label>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
             {TOPIC_TAGS.map(t => (
               <Tooltip key={t.id} text={t.desc}>
                 <span onClick={() => toggleTag(t.id)} style={{
-                  padding: "3px 9px", borderRadius: "2px",
-                  fontSize: "10px", fontWeight: 600,
-                  letterSpacing: "0.05em", textTransform: "uppercase",
-                  cursor: "pointer", userSelect: "none",
+                  padding: "3px 9px", borderRadius: "2px", fontSize: "10px", fontWeight: 600,
+                  letterSpacing: "0.05em", textTransform: "uppercase", cursor: "pointer", userSelect: "none",
                   background: selectedTags.includes(t.id) ? "#1a1a1a" : "#f0ede8",
                   color: selectedTags.includes(t.id) ? "#f5f2ed" : "#666",
                   border: `1px solid ${selectedTags.includes(t.id) ? "#1a1a1a" : "#ddd9d3"}`,
@@ -629,10 +654,7 @@ function AddModal({ onAdd, onClose, existingUrls }) {
         </div>
 
         <div>
-          <label style={label}>
-            Your Name
-            <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, marginLeft: "6px", color: "#bbb", fontSize: "10px" }}>— optional</span>
-          </label>
+          <label style={label}>Your Name <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, color: "#bbb", fontSize: "10px" }}>— optional</span></label>
           <input style={field(false)} value={addedBy} placeholder="Who's adding this?"
             onChange={e => setAddedBy(e.target.value)}
             onFocus={e => e.target.style.borderColor = "#7a4d1a"}
@@ -643,15 +665,13 @@ function AddModal({ onAdd, onClose, existingUrls }) {
         <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", paddingBottom: "4px" }}>
           <button onClick={onClose} style={{
             padding: "9px 16px", background: "none", border: "1px solid #ddd9d3",
-            borderRadius: "3px", cursor: "pointer", fontSize: "13px",
-            color: "#888", fontFamily: "'DM Sans', sans-serif",
+            borderRadius: "3px", cursor: "pointer", fontSize: "13px", color: "#888", fontFamily: "'DM Sans', sans-serif",
           }}>Cancel</button>
           <button onClick={handleSubmit} disabled={saving} style={{
             padding: "9px 22px", background: saving ? "#888" : "#1a1a1a", border: "none",
             borderRadius: "3px", cursor: saving ? "default" : "pointer", fontSize: "13px",
-            color: "#f5f2ed", fontFamily: "'DM Sans', sans-serif",
-            fontWeight: 600, letterSpacing: "0.03em",
-          }}>{saving ? "Saving…" : "Save Bookmark"}</button>
+            color: "#f5f2ed", fontFamily: "'DM Sans', sans-serif", fontWeight: 600, letterSpacing: "0.03em",
+          }}>{saving ? "Saving…" : isEdit ? "Save Changes" : "Save Bookmark"}</button>
         </div>
       </div>
     </div>
@@ -668,7 +688,9 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState(null);
   const [activeModal, setActiveModal] = useState(null);
-  const [showModal, setShowModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingBookmark, setEditingBookmark] = useState(null);
+  const [selectedBookmark, setSelectedBookmark] = useState(null);
   const [upvoted, setUpvoted] = useState(() => {
     try { return JSON.parse(localStorage.getItem(UPVOTED_KEY) || "[]"); } catch { return []; }
   });
@@ -676,9 +698,7 @@ export default function App() {
   useEffect(() => {
     async function load() {
       const { data, error } = await supabase
-        .from("bookmarks")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .from("bookmarks").select("*").order("created_at", { ascending: false });
       if (!error) setBookmarks((data || []).map(b => ({ ...b, _upvoted: upvoted.includes(b.id) })));
       setLoading(false);
     }
@@ -686,17 +706,23 @@ export default function App() {
   }, []);
 
   const addBookmark = async (bookmark) => {
-    const { data, error } = await supabase
-      .from("bookmarks")
-      .insert([bookmark])
-      .select()
-      .single();
+    const { data, error } = await supabase.from("bookmarks").insert([bookmark]).select().single();
     if (!error && data) setBookmarks(bs => [{ ...data, _upvoted: false }, ...bs]);
+  };
+
+  const updateBookmark = async (bookmark) => {
+    const { id, _upvoted, ...fields } = bookmark;
+    const { data, error } = await supabase.from("bookmarks").update(fields).eq("id", id).select().single();
+    if (!error && data) {
+      setBookmarks(bs => bs.map(b => b.id === id ? { ...data, _upvoted: b._upvoted } : b));
+      if (selectedBookmark?.id === id) setSelectedBookmark({ ...data, _upvoted: selectedBookmark._upvoted });
+    }
   };
 
   const deleteBookmark = async (id) => {
     await supabase.from("bookmarks").delete().eq("id", id);
     setBookmarks(bs => bs.filter(b => b.id !== id));
+    if (selectedBookmark?.id === id) setSelectedBookmark(null);
   };
 
   const handleClickLink = async (id) => {
@@ -715,6 +741,10 @@ export default function App() {
     const newUpvotes = Math.max(0, (current?.upvotes || 0) + delta);
     setBookmarks(bs => bs.map(b => b.id === id ? { ...b, upvotes: newUpvotes, _upvoted: !wasUpvoted } : b));
     await supabase.from("bookmarks").update({ upvotes: newUpvotes }).eq("id", id);
+  };
+
+  const handleCardClick = (bookmark) => {
+    setSelectedBookmark(s => s?.id === bookmark.id ? null : bookmark);
   };
 
   const existingUrls = bookmarks.map(b => b.url);
@@ -750,31 +780,22 @@ export default function App() {
         input, textarea, button { font-family: inherit; }
       `}</style>
 
-      <div style={{ minHeight: "100vh", background: "#f5f2ed", display: "flex", flexDirection: "column" }}>
+      <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#f5f2ed" }}>
 
-        {/* Header — clean, no carousel */}
+        {/* Header */}
         <header style={{
           background: "#fff", borderBottom: "1px solid #e0dbd3",
-          padding: "0 32px", height: "62px",
+          padding: "0 32px", height: "62px", flexShrink: 0,
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          position: "sticky", top: 0, zIndex: 100,
+          zIndex: 100,
         }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
-            <span style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: "22px", fontWeight: 700,
-              color: "#1a1a1a", letterSpacing: "-0.02em",
-            }}>Commonplace</span>
-            <span style={{
-              fontSize: "11px", color: "#c0bab2",
-              fontFamily: "'DM Mono', monospace", letterSpacing: "0.04em",
-            }}>shared links</span>
+            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "22px", fontWeight: 700, color: "#1a1a1a", letterSpacing: "-0.02em" }}>Commonplace</span>
+            <span style={{ fontSize: "11px", color: "#c0bab2", fontFamily: "'DM Mono', monospace", letterSpacing: "0.04em" }}>shared links</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-            <span style={{ fontSize: "12px", color: "#c0bab2", fontFamily: "'DM Mono', monospace" }}>
-              {bookmarks.length} saved
-            </span>
-            <button onClick={() => setShowModal(true)} style={{
+            <span style={{ fontSize: "12px", color: "#c0bab2", fontFamily: "'DM Mono', monospace" }}>{bookmarks.length} saved</span>
+            <button onClick={() => setShowAddModal(true)} style={{
               padding: "8px 18px", background: "#1a1a1a", color: "#f5f2ed",
               border: "none", borderRadius: "3px", cursor: "pointer",
               fontSize: "13px", fontFamily: "'DM Sans', sans-serif",
@@ -786,32 +807,21 @@ export default function App() {
           </div>
         </header>
 
-        {/* Main content */}
-        <main style={{ flex: 1 }}>
-          <div style={{ maxWidth: "860px", margin: "0 auto", padding: "32px 24px" }}>
+        {/* Scrollable middle */}
+        <main style={{ flex: 1, overflowY: "auto" }}>
+          <div style={{ maxWidth: selectedBookmark ? "1200px" : "860px", margin: "0 auto", padding: "32px 24px", transition: "max-width 0.3s ease" }}>
 
             {/* Search */}
             <div style={{ position: "relative", marginBottom: "20px" }}>
-              <span style={{
-                position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)",
-                fontSize: "15px", color: "#c0bab2", pointerEvents: "none",
-              }}>⌕</span>
+              <span style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", fontSize: "15px", color: "#c0bab2", pointerEvents: "none" }}>⌕</span>
               <input value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Search by title, tag, URL, or contributor…"
-                style={{
-                  width: "100%", padding: "11px 36px",
-                  border: "1px solid #e0dbd3", borderRadius: "4px",
-                  fontSize: "14px", fontFamily: "'DM Sans', sans-serif",
-                  color: "#1a1a1a", background: "#fff", outline: "none",
-                }}
+                style={{ width: "100%", padding: "11px 36px", border: "1px solid #e0dbd3", borderRadius: "4px", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", color: "#1a1a1a", background: "#fff", outline: "none" }}
                 onFocus={e => e.target.style.borderColor = "#7a4d1a"}
                 onBlur={e => e.target.style.borderColor = "#e0dbd3"}
               />
               {search && (
-                <button onClick={() => setSearch("")} style={{
-                  position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)",
-                  background: "none", border: "none", cursor: "pointer", color: "#bbb", fontSize: "17px",
-                }}>×</button>
+                <button onClick={() => setSearch("")} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#bbb", fontSize: "17px" }}>×</button>
               )}
             </div>
 
@@ -821,9 +831,8 @@ export default function App() {
                 {MODAL_TYPES.filter(m => allUsedModals.includes(m.id)).map(m => (
                   <Tooltip key={m.id} text={m.desc}>
                     <span onClick={() => toggleModal(m.id)} style={{
-                      padding: "4px 11px", borderRadius: "2px",
-                      fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em",
-                      textTransform: "uppercase", cursor: "pointer", userSelect: "none",
+                      padding: "4px 11px", borderRadius: "2px", fontSize: "11px", fontWeight: 700,
+                      letterSpacing: "0.05em", textTransform: "uppercase", cursor: "pointer", userSelect: "none",
                       background: activeModal === m.id ? m.bg : "#fff",
                       color: activeModal === m.id ? m.color : "#aaa",
                       border: `1px solid ${activeModal === m.id ? m.color : "#e0dbd3"}`,
@@ -838,16 +847,12 @@ export default function App() {
             {allUsedTags.length > 0 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "22px" }}>
                 {TOPIC_TAGS.filter(t => allUsedTags.includes(t.id)).map(t => (
-                  <TopicPill key={t.id} tag={t.id}
-                    active={activeTag === t.id}
-                    onClick={() => toggleTag(t.id)}
-                  />
+                  <TopicPill key={t.id} tag={t.id} active={activeTag === t.id} onClick={() => toggleTag(t.id)} />
                 ))}
                 {hasFilter && (
                   <button onClick={() => { setSearch(""); setActiveTag(null); setActiveModal(null); }} style={{
                     padding: "3px 10px", background: "none", border: "1px dashed #ccc",
-                    borderRadius: "2px", cursor: "pointer", fontSize: "11px",
-                    color: "#aaa", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.04em",
+                    borderRadius: "2px", cursor: "pointer", fontSize: "11px", color: "#aaa", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.04em",
                   }}>clear all</button>
                 )}
               </div>
@@ -856,59 +861,74 @@ export default function App() {
             {hasFilter && (
               <div style={{ fontSize: "11px", color: "#bbb", marginBottom: "14px", fontFamily: "'DM Mono', monospace" }}>
                 {filtered.length} result{filtered.length !== 1 ? "s" : ""}
-                {activeModal ? ` · ${activeModal}` : ""}
-                {activeTag ? ` · ${activeTag}` : ""}
-                {search ? ` · "${search}"` : ""}
+                {activeModal ? ` · ${activeModal}` : ""}{activeTag ? ` · ${activeTag}` : ""}{search ? ` · "${search}"` : ""}
               </div>
             )}
 
-            {/* Cards */}
-            {loading ? (
-              <div style={{ textAlign: "center", padding: "72px 24px", color: "#c0bab2", fontFamily: "'DM Mono', monospace", fontSize: "13px" }}>
-                Loading…
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {filtered.length === 0 ? (
-                  <div style={{
-                    textAlign: "center", padding: "72px 24px",
-                    color: "#c0bab2", fontFamily: "'Playfair Display', serif", fontSize: "19px",
-                  }}>
+            {/* Two-column layout when related panel is open */}
+            <div style={{ display: "flex", gap: "20px", alignItems: "flex-start" }}>
+              {/* Cards column */}
+              <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
+                {loading ? (
+                  <div style={{ textAlign: "center", padding: "72px 24px", color: "#c0bab2", fontFamily: "'DM Mono', monospace", fontSize: "13px" }}>Loading…</div>
+                ) : filtered.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "72px 24px", color: "#c0bab2", fontFamily: "'Playfair Display', serif", fontSize: "19px" }}>
                     No bookmarks found.
                     {hasFilter && (
                       <div style={{ marginTop: "10px", fontSize: "13px", fontFamily: "'DM Sans', sans-serif" }}>
                         <span style={{ cursor: "pointer", color: "#7a4d1a", textDecoration: "underline" }}
-                          onClick={() => { setSearch(""); setActiveTag(null); setActiveModal(null); }}>
-                          Clear filters
-                        </span>
+                          onClick={() => { setSearch(""); setActiveTag(null); setActiveModal(null); }}>Clear filters</span>
                       </div>
                     )}
                   </div>
-                ) : (
-                  filtered.map(b => (
-                    <BookmarkCard key={b.id} bookmark={b}
-                      onDelete={deleteBookmark}
-                      onTagClick={toggleTag}
-                      activeTag={activeTag}
-                      onClickLink={handleClickLink}
-                      onUpvote={handleUpvote}
-                    />
-                  ))
-                )}
+                ) : filtered.map(b => (
+                  <BookmarkCard key={b.id} bookmark={b}
+                    onDelete={deleteBookmark}
+                    onEdit={bm => setEditingBookmark(bm)}
+                    onTagClick={toggleTag}
+                    activeTag={activeTag}
+                    onClickLink={handleClickLink}
+                    onUpvote={handleUpvote}
+                    isSelected={selectedBookmark?.id === b.id}
+                    onClick={() => handleCardClick(b)}
+                  />
+                ))}
               </div>
-            )}
+
+              {/* Related panel */}
+              {selectedBookmark && (
+                <RelatedPanel
+                  bookmark={selectedBookmark}
+                  allBookmarks={bookmarks}
+                  onClose={() => setSelectedBookmark(null)}
+                  onTagClick={toggleTag}
+                />
+              )}
+            </div>
           </div>
         </main>
 
-        {/* Footer carousel */}
+        {/* Sticky footer */}
         <FooterCarousel bookmarks={bookmarks} />
       </div>
 
-      {showModal && (
-        <AddModal
-          onAdd={addBookmark}
-          onClose={() => setShowModal(false)}
+      {/* Add modal */}
+      {showAddModal && (
+        <BookmarkModal
+          onSave={addBookmark}
+          onClose={() => setShowAddModal(false)}
           existingUrls={existingUrls}
+          editingBookmark={null}
+        />
+      )}
+
+      {/* Edit modal */}
+      {editingBookmark && (
+        <BookmarkModal
+          onSave={updateBookmark}
+          onClose={() => setEditingBookmark(null)}
+          existingUrls={existingUrls}
+          editingBookmark={editingBookmark}
         />
       )}
     </>
