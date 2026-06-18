@@ -36,6 +36,7 @@ const QUOTES = [
 const MODAL_TYPES = [
   { id: "Reading",  color: "#4a7c59", bg: "#eaf3ec", desc: "General webpage articles or blog posts" },
   { id: "Learning", color: "#2c6e9e", bg: "#e8f2fa", desc: "Interactive sites, tutorials, or self-learn embeds" },
+  { id: "Documentation", color: "#3d5a80", bg: "#e8eef5", desc: "Official docs, references and guides" },
   { id: "Video",    color: "#9e3d2c", bg: "#faede8", desc: "Video content — YouTube, Vimeo, etc." },
   { id: "Podcast",  color: "#7a4d9e", bg: "#f2ebfa", desc: "Audio content — podcast episodes or series" },
   { id: "Tool",     color: "#7a6d1e", bg: "#faf6e0", desc: "Interactive tools, playgrounds, or calculators" },
@@ -46,6 +47,7 @@ const MODAL_TYPES = [
 
 const TOPIC_TAGS = [
   { id: "Python",           desc: "Python language resources" },
+  { id: "SQL",              desc: "SQL queries, databases and data manipulation" },
   { id: "Pandas",           desc: "Pandas data manipulation library" },
   { id: "NumPy",            desc: "NumPy numerical computing" },
   { id: "Maths",            desc: "Mathematics concepts and resources" },
